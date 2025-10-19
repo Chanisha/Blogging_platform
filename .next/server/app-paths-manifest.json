@@ -1,9 +1,8 @@
 {
-  "/login/page": "app/login/page.js",
-  "/register/page": "app/register/page.js",
-  "/api/auth/route": "app/api/auth/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/posts/route": "app/api/posts/route.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/edit/[slug]/page": "app/edit/[slug]/page.js",
-  "/api/posts/[slug]/route": "app/api/posts/[slug]/route.js"
+  "/create/page": "app/create/page.js",
+  "/api/posts/[slug]/route": "app/api/posts/[slug]/route.js",
+  "/page": "app/page.js"
 }
