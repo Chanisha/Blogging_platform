@@ -36,7 +36,6 @@ export default function MarkdownEditor({ content, onChange, placeholder }: Markd
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden">
-      {/* Toolbar */}
       <div className="border-b border-gray-200 bg-gray-50 p-2 flex flex-wrap gap-1">
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -151,7 +150,6 @@ export default function MarkdownEditor({ content, onChange, placeholder }: Markd
         </button>
       </div>
       
-      {/* Editor Content */}
       <EditorContent editor={editor} />
     </div>
   )

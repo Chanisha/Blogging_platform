@@ -7,9 +7,7 @@ import Link from 'next/link'
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [user, setUser] = useState(null) // Mock user state
 
-  // Check for user in localStorage on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user')
@@ -22,7 +20,6 @@ export default function Home() {
   const handleDeletePost = (postId: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
       console.log('Deleting post:', postId)
-      // In a real app, this would call the delete API
     }
   }
 
@@ -30,11 +27,9 @@ export default function Home() {
     const action = currentStatus ? 'unpublish' : 'publish'
     if (window.confirm(`Are you sure you want to ${action} this post?`)) {
       console.log(`${action}ing post:`, postId)
-      // In a real app, this would call the update API
     }
   }
 
-  // Mock data for now
   const mockPosts = [
     {
       id: '1',
@@ -126,9 +121,60 @@ export default function Home() {
     : mockPosts
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero Section */}
-      <div className="text-center mb-12">
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Link href="/" className="text-2xl font-bold text-blue-600">
+                BlogHub
+              </Link>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-gray-700">Welcome, {user.username}!</span>
+                  <Link
+                    href="/dashboard"
+                    className="text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('user')
+                      setUser(null)
+                      window.location.reload()
+                    }}
+                    className="text-gray-600 hover:text-red-600 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link
+                    href="/login"
+                    className="text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="btn-primary"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-12">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-4">
           Welcome to <span className="text-blue-600">BlogHub</span>
         </h1>
@@ -136,7 +182,6 @@ export default function Home() {
           Discover amazing stories, share your thoughts, and connect with a community of writers and readers.
         </p>
         
-        {/* Search Bar */}
         <form onSubmit={handleSearch} className="max-w-md mx-auto">
           <div className="flex">
             <input
@@ -155,7 +200,6 @@ export default function Home() {
           </div>
         </form>
         
-        {/* Create Post Button */}
         {user && (
           <div className="mt-6">
             <Link
@@ -169,7 +213,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Posts Grid */}
       {filteredPosts.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No posts found.</p>
@@ -228,7 +271,6 @@ export default function Home() {
                   </div>
                 </div>
                 
-                {/* Edit/Delete buttons for logged-in users */}
                 {user && (
                   <div className="flex items-center space-x-2">
                     <Link
@@ -262,7 +304,6 @@ export default function Home() {
                 </div>
               )}
               
-              {/* Publish/Unpublish button for logged-in users */}
               {user && (
                 <div className="mt-4 pt-4 border-t">
                   <button
@@ -281,6 +322,7 @@ export default function Home() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

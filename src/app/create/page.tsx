@@ -10,6 +10,7 @@ export default function CreatePost() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
+    excerpt: '',
     tags: '',
     featuredImage: '',
     category: '',
@@ -52,13 +53,32 @@ export default function CreatePost() {
       if (!formData.content.trim()) {
         throw new Error('Content is required')
       }
-      if (!formData.category) {
-        throw new Error('Please select a category')
-      }
 
       console.log('Creating post:', formData)
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          tags: formData.tags,
+          featuredImage: formData.featuredImage,
+          category: formData.category,
+          published: formData.published,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create post')
+      }
+
+      const result = await response.json()
+      console.log('Post created:', result)
       
       setSuccess(formData.published ? 'Post published successfully!' : 'Post saved as draft!')
       
@@ -67,6 +87,7 @@ export default function CreatePost() {
       }, 1500)
       
     } catch (err) {
+      console.error('Error creating post:', err)
       setError(err instanceof Error ? err.message : 'Error creating post')
     } finally {
       setLoading(false)
@@ -117,6 +138,9 @@ export default function CreatePost() {
           <div className="space-y-6">
             <div className="border-b pb-4">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{formData.title || 'Untitled Post'}</h2>
+              {formData.excerpt && (
+                <p className="text-gray-600 mb-4 italic">{formData.excerpt}</p>
+              )}
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <span className="flex items-center">
                   <Calendar size={16} />
@@ -129,7 +153,7 @@ export default function CreatePost() {
               </div>
             </div>
             <div className="prose max-w-none">
-              <pre className="whitespace-pre-wrap text-gray-700">{formData.content || 'No content yet...'}</pre>
+              <div dangerouslySetInnerHTML={{ __html: formData.content || 'No content yet...' }} />
             </div>
           </div>
         ) : (
@@ -148,6 +172,24 @@ export default function CreatePost() {
                 className="input-field"
                 placeholder="Enter your post title..."
               />
+            </div>
+
+            <div>
+              <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-2">
+                Excerpt
+              </label>
+              <textarea
+                id="excerpt"
+                name="excerpt"
+                value={formData.excerpt}
+                onChange={handleChange}
+                rows={3}
+                className="input-field"
+                placeholder="Brief description of your post (optional)"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                A short summary that will appear in post previews
+              </p>
             </div>
 
             <div>

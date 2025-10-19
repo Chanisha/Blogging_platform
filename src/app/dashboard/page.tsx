@@ -4,12 +4,58 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Edit, Trash2, Eye, Calendar, Heart, Plus, Search, Filter, Tag, Clock, User } from 'lucide-react'
 
+interface Post {
+  id: string
+  title: string
+  content: string
+  excerpt: string
+  slug: string
+  featuredImage?: string
+  publishedAt?: string | null
+  views: number
+  likes: string[]
+  tags: string[]
+  author: {
+    id: string
+    username: string
+    avatar?: string
+  }
+  published: boolean
+  createdAt: string
+  updatedAt: string
+  category?: string
+}
+
 export default function Dashboard() {
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [sortBy, setSortBy] = useState('newest')
-  const [user, setUser] = useState(null) 
+  const [user, setUser] = useState(null)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/posts')
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts')
+      }
+      const data = await response.json()
+      setPosts(data.posts || [])
+    } catch (err) {
+      console.error('Error fetching posts:', err)
+      setError('Failed to load posts')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPosts()
+  }, [])
 
   const mockUserPosts = [
     {
@@ -100,21 +146,67 @@ export default function Dashboard() {
 
   const categories = ['Technology', 'Travel', 'Food', 'Lifestyle', 'Business', 'Health', 'Education', 'Entertainment']
 
-  const handleDelete = async (postId: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
-      return
+
+  const handleDeletePost = async (postId: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+      try {
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: 'DELETE',
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete post')
+        }
+        
+        setPosts(posts.filter(post => post.id !== postId))
+        alert('Post deleted successfully!')
+      } catch (err) {
+        console.error('Error deleting post:', err)
+        alert('Failed to delete post. Please try again.')
+      }
     }
-    console.log('Deleting post:', postId)
   }
 
-  const handleTogglePublish = (postId: string, currentStatus: boolean) => {
+  const handleTogglePublish = async (postId: string, currentStatus: boolean) => {
     const action = currentStatus ? 'unpublish' : 'publish'
     if (window.confirm(`Are you sure you want to ${action} this post?`)) {
-      console.log(`${action}ing post:`, postId)
+      try {
+        const post = posts.find(p => p.id === postId)
+        if (!post) return
+
+        const response = await fetch(`/api/posts/${post.slug}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: post.title,
+            content: post.content,
+            excerpt: post.excerpt,
+            tags: post.tags,
+            featuredImage: post.featuredImage,
+            published: !currentStatus,
+          }),
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Failed to ${action} post`)
+        }
+        
+        setPosts(posts.map(p => 
+          p.id === postId 
+            ? { ...p, published: !currentStatus, publishedAt: !currentStatus ? new Date().toISOString() : null }
+            : p
+        ))
+        alert(`Post ${action}ed successfully!`)
+      } catch (err) {
+        console.error(`Error ${action}ing post:`, err)
+        alert(`Failed to ${action} post. Please try again.`)
+      }
     }
   }
 
-  const filteredPosts = mockUserPosts
+  const filteredPosts = posts
     .filter(post => {
       const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -142,10 +234,10 @@ export default function Dashboard() {
     })
 
   const stats = {
-    totalPosts: mockUserPosts.length,
-    publishedPosts: mockUserPosts.filter(p => p.published).length,
-    draftPosts: mockUserPosts.filter(p => !p.published).length,
-    totalViews: mockUserPosts.reduce((sum, p) => sum + p.views, 0)
+    totalPosts: posts.length,
+    publishedPosts: posts.filter(p => p.published).length,
+    draftPosts: posts.filter(p => !p.published).length,
+    totalViews: posts.reduce((sum, p) => sum + (p.views || 0), 0)
   }
 
   const formatDate = (dateString: string) => {
@@ -274,7 +366,7 @@ export default function Dashboard() {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            All Posts ({mockUserPosts.length})
+            All Posts ({posts.length})
           </button>
           <button
             onClick={() => setFilter('published')}
@@ -299,7 +391,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {filteredPosts.length === 0 ? (
+      {loading ? (
+        <div className="card text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading posts...</h3>
+          <p className="text-gray-600">Please wait while we fetch your posts.</p>
+        </div>
+      ) : error ? (
+        <div className="card text-center py-12">
+          <div className="text-red-500 mb-4">
+            <Edit className="h-12 w-12 mx-auto mb-2" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading posts</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchPosts}
+              className="btn-primary"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      ) : filteredPosts.length === 0 ? (
         <div className="card text-center py-12">
           <Edit className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
@@ -398,7 +510,7 @@ export default function Dashboard() {
                   </button>
                   
                   <button
-                    onClick={() => handleDelete(post.id, post.title)}
+                    onClick={() => handleDeletePost(post.id, post.title)}
                     className="btn-danger text-sm flex items-center space-x-1"
                     title="Delete post"
                   >

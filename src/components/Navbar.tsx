@@ -7,9 +7,7 @@ import { Menu, X, User, LogOut, Edit3, Home } from 'lucide-react'
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [user, setUser] = useState(null) // This would come from auth context
 
-  // Check for user in localStorage on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user')
@@ -20,7 +18,6 @@ export default function Navbar() {
   }, [])
 
   const handleLogout = () => {
-    // Implement logout logic
     localStorage.removeItem('user')
     setUser(null)
     setIsProfileOpen(false)
@@ -30,13 +27,11 @@ export default function Navbar() {
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <Edit3 className="h-8 w-8 text-blue-600" />
             <span className="text-xl font-bold text-gray-900">BlogHub</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link 
               href="/" 
@@ -115,7 +110,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -126,7 +120,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">

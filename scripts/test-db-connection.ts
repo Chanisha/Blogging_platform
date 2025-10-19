@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 
-/**
- * Database connection test script
- * Run this script to test your PostgreSQL connection
- * Usage: npx tsx scripts/test-db-connection.ts
- */
 
 import { config } from 'dotenv';
 import path from 'path';
 
-// Load environment variables from .env file
 config({ path: path.resolve(process.cwd(), '.env') });
 
 import { testDatabaseConnection, getDatabaseInfo } from '../src/lib/db/test-connection';
@@ -17,7 +11,6 @@ import { testDatabaseConnection, getDatabaseInfo } from '../src/lib/db/test-conn
 async function main() {
   console.log('🔍 Testing PostgreSQL database connection...\n');
 
-  // Test basic connection
   const isConnected = await testDatabaseConnection();
   
   if (isConnected) {
