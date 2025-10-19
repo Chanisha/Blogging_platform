@@ -85,12 +85,23 @@ Try publishing this or saving as a draft.`,
     try {
       if (!postData.title.trim()) throw new Error('Title is required.')
       if (!postData.content.trim()) throw new Error('Content cannot be empty.')
-      if (!postData.category) throw new Error('Select a category please.')
 
       console.log('Saving post...', postData)
-      await new Promise(r => setTimeout(r, 1000))
+      
+      const response = await fetch(`/api/posts/${params.slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      })
 
-      setTempMessage('Post updated successfully 🎉')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update post')
+      }
+
+      setTempMessage('Post updated successfully')
       setTimeout(() => router.push('/dashboard'), 1500)
       
     } catch (err) {
@@ -102,7 +113,6 @@ Try publishing this or saving as a draft.`,
   }
 
   const saveAsDraft = async () => {
-    setPostData(prev => ({ ...prev, published: false }))
     setIsSaving(true)
     setErrorMsg('')
     setTempMessage('')
@@ -110,10 +120,22 @@ Try publishing this or saving as a draft.`,
     try {
       if (!postData.title.trim()) throw new Error('Title is required.')
       if (!postData.content.trim()) throw new Error('Content cannot be empty.')
-      if (!postData.category) throw new Error('Select a category please.')
 
-      console.log('Saving post as draft...', { ...postData, published: false })
-      await new Promise(r => setTimeout(r, 1000))
+      const draftData = { ...postData, published: false }
+      console.log('Saving post as draft...', draftData)
+      
+      const response = await fetch(`/api/posts/${params.slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(draftData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save draft')
+      }
 
       setTempMessage('Draft saved successfully 🎉')
       setTimeout(() => router.push('/dashboard'), 1500)
@@ -127,7 +149,6 @@ Try publishing this or saving as a draft.`,
   }
 
   const publishNow = async () => {
-    setPostData(prev => ({ ...prev, published: true }))
     setIsSaving(true)
     setErrorMsg('')
     setTempMessage('')
@@ -135,10 +156,22 @@ Try publishing this or saving as a draft.`,
     try {
       if (!postData.title.trim()) throw new Error('Title is required.')
       if (!postData.content.trim()) throw new Error('Content cannot be empty.')
-      if (!postData.category) throw new Error('Select a category please.')
 
-      console.log('Publishing post...', { ...postData, published: true })
-      await new Promise(r => setTimeout(r, 1000))
+      const publishData = { ...postData, published: true }
+      console.log('Publishing post...', publishData)
+      
+      const response = await fetch(`/api/posts/${params.slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(publishData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to publish post')
+      }
 
       setTempMessage('Post published successfully 🎉')
       setTimeout(() => router.push('/dashboard'), 1500)
@@ -151,10 +184,36 @@ Try publishing this or saving as a draft.`,
     }
   }
 
-  const deletePost = () => {
-    if (window.confirm('Really delete this post? It can’t be undone.')) {
-      console.log('Deleting post:', params.slug)
-      router.push('/dashboard')
+  const deletePost = async () => {
+    if (window.confirm('Really delete this post? It cannot be undone.')) {
+      setIsSaving(true)
+      setErrorMsg('')
+      setTempMessage('')
+
+      try {
+        console.log('Deleting post:', params.slug)
+        
+        const response = await fetch(`/api/posts/${params.slug}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to delete post')
+        }
+        
+        setTempMessage('Post deleted successfully')
+        setTimeout(() => router.push('/dashboard'), 1500)
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Something went wrong while deleting the post.'
+        setErrorMsg(errorMessage)
+      } finally {
+        setIsSaving(false)
+      }
     }
   }
 
@@ -338,9 +397,10 @@ Try publishing this or saving as a draft.`,
               <button
                 type="button"
                 onClick={deletePost}
-                className="btn-danger flex items-center justify-center space-x-2"
+                disabled={isSaving}
+                className="btn-danger flex items-center justify-center space-x-2 disabled:opacity-50"
               >
-                Delete Post
+                <span>{isSaving ? 'Deleting...' : 'Delete Post'}</span>
               </button>
 
               <button

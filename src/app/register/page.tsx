@@ -42,20 +42,32 @@ export default function Register() {
 
       console.log('Registration attempt:', formData)
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockUser = {
-        id: 'mock-user-id',
-        email: formData.email,
-        username: formData.username,
-        role: 'user'
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          username: formData.username,
+          action: 'register',
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Registration failed')
       }
+
+      const result = await response.json()
+      console.log('Registration successful:', result)
       
-      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem('user', JSON.stringify(result.user))
       router.push('/dashboard')
       
     } catch (err) {
-      setError('Registration failed. Please try again.')
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -100,6 +112,7 @@ export default function Register() {
                 onChange={handleChange}
                 className="mt-1 input-field"
                 placeholder="Choose a username"
+                suppressHydrationWarning
               />
             </div>
             
@@ -116,6 +129,7 @@ export default function Register() {
                 onChange={handleChange}
                 className="mt-1 input-field"
                 placeholder="Enter your email"
+                suppressHydrationWarning
               />
             </div>
             

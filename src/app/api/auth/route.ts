@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Simple password check (in production, use bcrypt)
       if (user[0].password !== password) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
       })
 
     } else if (action === 'register') {
+      // Register
       const { username } = body
 
       if (!username) {
@@ -61,6 +63,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Check if user already exists
       const existingUser = await db
         .select()
         .from(users)
@@ -74,12 +77,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Create new user
       const newUser = await db
         .insert(users)
         .values({
           email,
           username,
-          password,
+          password, // In production, hash this password
           role: 'user',
         })
         .returning()

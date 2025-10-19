@@ -58,7 +58,28 @@ export default function CreatePost() {
 
       console.log('Creating post:', formData)
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          content: formData.content,
+          tags: formData.tags,
+          featuredImage: formData.featuredImage,
+          category: formData.category,
+          published: formData.published,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create post')
+      }
+
+      const result = await response.json()
+      console.log('Post created:', result)
       
       setSuccess(formData.published ? 'Post published successfully!' : 'Post saved as draft!')
       

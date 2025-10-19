@@ -1,38 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/db'
 import { posts } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  try {
-    const { slug } = params
-    const db = getDatabase()
-    
-    const post = await db
-      .select()
-      .from(posts)
-      .where(eq(posts.slug, slug))
-      .limit(1)
-
-    if (post.length === 0) {
-      return NextResponse.json(
-        { error: 'Post not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(post[0])
-  } catch (error) {
-    console.error('Error fetching post:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch post' },
-      { status: 500 }
-    )
-  }
-}
+import { eq } from 'drizzle-orm'
 
 export async function PUT(
   request: NextRequest,
@@ -40,43 +9,94 @@ export async function PUT(
 ) {
   try {
     const { slug } = params
-    const body = await request.json()
-    const { title, content, excerpt, tags, featuredImage, published } = body
+    
+    if (!slug) {
+      return NextResponse.json(
+        { error: 'Post slug is required' },
+        { status: 400 }
+      )
+    }
+
+    const { title, content, tags, featuredImage, category, published, excerpt } = await request.json()
+
+    // Validate required fields
+    if (!title?.trim()) {
+      return NextResponse.json(
+        { error: 'Title is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!content?.trim()) {
+      return NextResponse.json(
+        { error: 'Content is required' },
+        { status: 400 }
+      )
+    }
 
     const db = getDatabase()
     
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
-    const whereCondition = isUuid ? eq(posts.id, slug) : eq(posts.slug, slug)
+    // Check if post exists
+    const existingPost = await db
+      .select({ slug: posts.slug, publishedAt: posts.publishedAt })
+      .from(posts)
+      .where(eq(posts.slug, slug))
+      .limit(1)
 
-    const updatedPost = await db
-      .update(posts)
-      .set({
-        ...(title && { title: title.trim() }),
-        ...(content && { content: content.trim() }),
-        ...(excerpt !== undefined && { excerpt: excerpt?.trim() || null }),
-        ...(tags && { tags }),
-        ...(featuredImage !== undefined && { featuredImage: featuredImage?.trim() || null }),
-        ...(published !== undefined && { 
-          published,
-          publishedAt: published ? new Date() : null 
-        }),
-        updatedAt: new Date(),
-      })
-      .where(whereCondition)
-      .returning()
-
-    if (updatedPost.length === 0) {
+    if (existingPost.length === 0) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(updatedPost[0])
+    // Prepare update data
+    const updateData: any = {
+      title: title.trim(),
+      content: content.trim(),
+      excerpt: excerpt?.trim() || null,
+      featuredImage: featuredImage?.trim() || null,
+      updatedAt: new Date(),
+    }
+
+    // Handle tags - support both array and comma-separated string
+    if (tags) {
+      if (Array.isArray(tags)) {
+        updateData.tags = tags.filter(Boolean)
+      } else {
+        updateData.tags = tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+      }
+    }
+
+    // Handle published status
+    if (typeof published === 'boolean') {
+      updateData.published = published
+      if (published && !existingPost[0].publishedAt) {
+        updateData.publishedAt = new Date()
+      } else if (!published) {
+        updateData.publishedAt = null
+      }
+    }
+
+    // Update the post
+    const updatedPost = await db
+      .update(posts)
+      .set(updateData)
+      .where(eq(posts.slug, slug))
+      .returning()
+
+    return NextResponse.json(
+      { 
+        message: 'Post updated successfully',
+        post: updatedPost[0]
+      },
+      { status: 200 }
+    )
+
   } catch (error) {
     console.error('Error updating post:', error)
     return NextResponse.json(
-      { error: 'Failed to update post' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -88,28 +108,46 @@ export async function DELETE(
 ) {
   try {
     const { slug } = params
+    
+    if (!slug) {
+      return NextResponse.json(
+        { error: 'Post slug is required' },
+        { status: 400 }
+      )
+    }
+
     const db = getDatabase()
     
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
-    const whereCondition = isUuid ? eq(posts.id, slug) : eq(posts.slug, slug)
+    // Check if post exists
+    const existingPost = await db
+      .select({ slug: posts.slug, publishedAt: posts.publishedAt })
+      .from(posts)
+      .where(eq(posts.slug, slug))
+      .limit(1)
 
-    const deletedPost = await db
-      .delete(posts)
-      .where(whereCondition)
-      .returning()
-
-    if (deletedPost.length === 0) {
+    if (existingPost.length === 0) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ message: 'Post deleted successfully' })
+    // Delete the post
+    await db
+      .delete(posts)
+      .where(eq(posts.slug, slug))
+
+    return NextResponse.json(
+      { 
+        message: 'Post deleted successfully'
+      },
+      { status: 200 }
+    )
+
   } catch (error) {
     console.error('Error deleting post:', error)
     return NextResponse.json(
-      { error: 'Failed to delete post' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
