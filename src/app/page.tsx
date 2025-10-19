@@ -7,6 +7,7 @@ import Link from 'next/link'
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
