@@ -20,6 +20,7 @@ export const posts = pgTable('posts', {
   excerpt: text('excerpt'),
   slug: text('slug').notNull().unique(),
   authorId: uuid('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  category: text('category'),
   tags: json('tags').$type<string[]>().default([]),
   featuredImage: text('featured_image'),
   published: boolean('published').notNull().default(false),
