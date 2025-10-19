@@ -54,7 +54,7 @@ export default function Dashboard() {
       const response = await fetch(`/api/posts?${params}`)
       
       if (!response.ok) {
-        throw new Error('Failed to fetch posts')
+        throw new Error('Failed to fetch the posts. Please try again later.')
       }
 
       const data = await response.json()
@@ -71,7 +71,7 @@ export default function Dashboard() {
   }, [filter, sortBy, filterCategory, searchTerm])
 
   const handleDelete = async (postId: string, title: string, slug: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
       return
     }
 
