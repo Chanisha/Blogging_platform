@@ -159,7 +159,6 @@ export default function Dashboard() {
         }
         
         setPosts(posts.filter(post => post.id !== postId))
-        alert('Post deleted successfully!')
       } catch (err) {
         console.error('Error deleting post:', err)
         alert('Failed to delete post. Please try again.')
