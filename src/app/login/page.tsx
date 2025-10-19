@@ -28,20 +28,31 @@ export default function Login() {
     try {
       console.log('Login attempt:', formData)
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockUser = {
-        id: 'mock-user-id',
-        email: formData.email,
-        username: 'mockuser',
-        role: 'user'
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          action: 'login',
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Login failed')
       }
+
+      const result = await response.json()
+      console.log('Login successful:', result)
       
-      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem('user', JSON.stringify(result.user))
       router.push('/dashboard')
       
     } catch (err) {
-      setError('Login failed. Please try again.')
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -86,6 +97,7 @@ export default function Login() {
                 onChange={handleChange}
                 className="mt-1 input-field"
                 placeholder="Enter your email"
+                suppressHydrationWarning
               />
             </div>
             
@@ -102,6 +114,7 @@ export default function Login() {
                 onChange={handleChange}
                 className="mt-1 input-field"
                 placeholder="Enter your password"
+                suppressHydrationWarning
               />
             </div>
           </div>

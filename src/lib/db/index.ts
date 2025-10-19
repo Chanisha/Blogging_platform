@@ -20,7 +20,7 @@ function getClient() {
       max: 10, // Maximum number of connections in the pool
       idle_timeout: 20, // Close idle connections after 20 seconds
       connect_timeout: 10, // Connection timeout in seconds
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Always require SSL for Neon PostgreSQL
     });
   }
   return client;

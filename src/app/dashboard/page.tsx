@@ -2,150 +2,158 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Edit, Trash2, Eye, Calendar, Heart, Plus, Search, Filter, Tag, Clock, User } from 'lucide-react'
 
+interface Post {
+  id: string
+  title: string
+  excerpt: string | null
+  slug: string
+  featuredImage: string | null
+  publishedAt: string | null
+  views: number
+  likes: string[]
+  tags: string[]
+  author: {
+    id: string
+    username: string
+    avatar: string | null
+  }
+  content: string
+  published: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export default function Dashboard() {
+  const router = useRouter()
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
   const [sortBy, setSortBy] = useState('newest')
-  const [user, setUser] = useState(null) 
-
-  const mockUserPosts = [
-    {
-      id: '1',
-      title: 'Welcome to BlogHub',
-      excerpt: 'This is a sample blog post to get you started with your new modern blogging platform built with Next.js, tRPC, and Tailwind CSS.',
-      slug: 'welcome-to-bloghub',
-      featuredImage: '',
-      publishedAt: new Date().toISOString(),
-      views: 42,
-      likes: [],
-      tags: ['welcome', 'getting-started', 'nextjs'],
-      author: {
-        id: '1',
-        username: 'admin',
-        avatar: '',
-      },
-      content: '# Welcome to BlogHub\n\nThis is a sample blog post...',
-      published: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      category: 'Technology'
-    },
-    {
-      id: '2',
-      title: 'Draft Post Example',
-      excerpt: 'This is a draft post that hasn\'t been published yet.',
-      slug: 'draft-post-example',
-      featuredImage: '',
-      publishedAt: null,
-      views: 0,
-      likes: [],
-      tags: ['draft', 'example'],
-      author: {
-        id: '1',
-        username: 'admin',
-        avatar: '',
-      },
-      content: '# Draft Post\n\nThis is a draft...',
-      published: false,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000).toISOString(),
-      category: 'Technology'
-    },
-    {
-      id: '3',
-      title: 'My Travel Adventures',
-      excerpt: 'A collection of stories from my recent travels around the world.',
-      slug: 'my-travel-adventures',
-      featuredImage: '',
-      publishedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-      views: 8,
-      likes: [],
-      tags: ['travel', 'adventure', 'lifestyle'],
-      author: {
-        id: '1',
-        username: 'admin',
-        avatar: '',
-      },
-      content: '# My Travel Adventures\n\nSharing stories from around the world...',
-      published: true,
-      createdAt: new Date(Date.now() - 259200000).toISOString(),
-      updatedAt: new Date(Date.now() - 259200000).toISOString(),
-      category: 'Travel'
-    },
-    {
-      id: '4',
-      title: 'Healthy Recipes for Busy People',
-      excerpt: 'Quick and nutritious meal ideas that you can prepare in under 30 minutes.',
-      slug: 'healthy-recipes-busy-people',
-      featuredImage: '',
-      publishedAt: new Date(Date.now() - 432000000).toISOString(),
-      views: 15,
-      likes: [],
-      tags: ['food', 'health', 'recipes'],
-      author: {
-        id: '1',
-        username: 'admin',
-        avatar: '',
-      },
-      content: '# Healthy Recipes\n\nQuick meal ideas for busy lifestyles...',
-      published: false,
-      createdAt: new Date(Date.now() - 432000000).toISOString(),
-      updatedAt: new Date(Date.now() - 432000000).toISOString(),
-      category: 'Food'
-    }
-  ]
+  const [posts, setPosts] = useState<Post[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const categories = ['Technology', 'Travel', 'Food', 'Lifestyle', 'Business', 'Health', 'Education', 'Entertainment']
 
-  const handleDelete = async (postId: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+  const fetchPosts = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      const params = new URLSearchParams({
+        filter,
+        sortBy,
+        ...(filterCategory && { category: filterCategory }),
+        ...(searchTerm && { search: searchTerm }),
+      })
+
+      const response = await fetch(`/api/posts?${params}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch the posts. Please try again later.')
+      }
+
+      const data = await response.json()
+      setPosts(data.posts)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch posts')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPosts()
+  }, [filter, sortBy, filterCategory, searchTerm])
+
+  const handleDelete = async (postId: string, title: string, slug: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
       return
     }
-    console.log('Deleting post:', postId)
-  }
 
-  const handleTogglePublish = (postId: string, currentStatus: boolean) => {
-    const action = currentStatus ? 'unpublish' : 'publish'
-    if (window.confirm(`Are you sure you want to ${action} this post?`)) {
-      console.log(`${action}ing post:`, postId)
+    setActionLoading(postId)
+    try {
+      const response = await fetch(`/api/posts/${slug}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete post')
+      }
+
+      setPosts(prev => prev.filter(post => post.id !== postId))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete post')
+    } finally {
+      setActionLoading(null)
     }
   }
 
-  const filteredPosts = mockUserPosts
+  const handleTogglePublish = async (postId: string, slug: string, currentStatus: boolean) => {
+    const action = currentStatus ? 'unpublish' : 'publish'
+    if (!window.confirm(`Are you sure you want to ${action} this post?`)) {
+      return
+    }
+
+    setActionLoading(postId)
+    try {
+      const post = posts.find(p => p.id === postId)
+      if (!post) throw new Error('Post not found')
+
+      const response = await fetch(`/api/posts/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: post.title,
+          content: post.content,
+          excerpt: post.excerpt,
+          tags: post.tags,
+          featuredImage: post.featuredImage,
+          published: !currentStatus,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `Failed to ${action} post`)
+      }
+
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, published: !currentStatus, publishedAt: !currentStatus ? new Date().toISOString() : null }
+          : p
+      ))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `Failed to ${action} post`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const filteredPosts = posts
     .filter(post => {
       const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())) ||
                            post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesCategory = !filterCategory || post.category === filterCategory
       const matchesStatus = filter === 'all' || 
                            (filter === 'published' && post.published) ||
                            (filter === 'draft' && !post.published)
       
-      return matchesSearch && matchesCategory && matchesStatus
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        case 'oldest':
-          return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-        case 'views':
-          return b.views - a.views
-        case 'title':
-          return a.title.localeCompare(b.title)
-        default:
-          return 0
-      }
+      return matchesSearch && matchesStatus
     })
 
   const stats = {
-    totalPosts: mockUserPosts.length,
-    publishedPosts: mockUserPosts.filter(p => p.published).length,
-    draftPosts: mockUserPosts.filter(p => !p.published).length,
-    totalViews: mockUserPosts.reduce((sum, p) => sum + p.views, 0)
+    totalPosts: posts.length,
+    publishedPosts: posts.filter(p => p.published).length,
+    draftPosts: posts.filter(p => !p.published).length,
+    totalViews: posts.reduce((sum, p) => sum + p.views, 0)
   }
 
   const formatDate = (dateString: string) => {
@@ -163,7 +171,25 @@ export default function Dashboard() {
         <p className="text-gray-600">Manage your blog posts</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="card animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          <div className="space-y-4">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="card">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -274,7 +300,7 @@ export default function Dashboard() {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            All Posts ({mockUserPosts.length})
+            All Posts ({posts.length})
           </button>
           <button
             onClick={() => setFilter('published')}
@@ -361,7 +387,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center space-x-1">
                       <Tag className="h-4 w-4" />
-                      <span>{post.category}</span>
+                      <span>{post.tags?.join(', ') || 'No tags'}</span>
                     </div>
                   </div>
                 </div>
@@ -386,30 +412,34 @@ export default function Dashboard() {
                   </Link>
                   
                   <button
-                    onClick={() => handleTogglePublish(post.id, post.published)}
-                    className={`text-sm px-3 py-1 rounded-lg font-medium transition-colors ${
+                    onClick={() => handleTogglePublish(post.id, post.slug, post.published)}
+                    disabled={actionLoading === post.id}
+                    className={`text-sm px-3 py-1 rounded-lg font-medium transition-colors disabled:opacity-50 ${
                       post.published
                         ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                         : 'bg-green-100 text-green-800 hover:bg-green-200'
                     }`}
                     title={post.published ? 'Unpublish post' : 'Publish post'}
                   >
-                    {post.published ? 'Unpublish' : 'Publish'}
+                    {actionLoading === post.id ? 'Processing...' : (post.published ? 'Unpublish' : 'Publish')}
                   </button>
                   
                   <button
-                    onClick={() => handleDelete(post.id, post.title)}
-                    className="btn-danger text-sm flex items-center space-x-1"
+                    onClick={() => handleDelete(post.id, post.title, post.slug)}
+                    disabled={actionLoading === post.id}
+                    className="btn-danger text-sm flex items-center space-x-1 disabled:opacity-50"
                     title="Delete post"
                   >
                     <Trash2 className="h-3 w-3" />
-                    <span>Delete</span>
+                    <span>{actionLoading === post.id ? 'Deleting...' : 'Delete'}</span>
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   )

@@ -1513,6 +1513,9 @@ video {
   --tw-text-opacity: 1;
   color: rgb(31 41 55 / var(--tw-text-opacity, 1));
 }
+.fixed {
+  position: fixed;
+}
 .absolute {
   position: absolute;
 }
@@ -1607,6 +1610,9 @@ video {
 }
 .flex {
   display: flex;
+}
+.table {
+  display: table;
 }
 .grid {
   display: grid;
