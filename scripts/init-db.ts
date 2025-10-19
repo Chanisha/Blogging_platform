@@ -40,7 +40,7 @@ async function initDatabase() {
     console.log('   Password: admin123');
     
   } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
+    console.error('❌ Database initialization failed:', error instanceof Error ? error.message : String(error));
   }
 }
 
