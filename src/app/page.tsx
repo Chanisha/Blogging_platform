@@ -7,7 +7,7 @@ import Link from 'next/link'
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [user, setUser] = useState(null) // Mock user state
+  const [user, setUser] = useState<{ username: string; id: string } | null>(null) // Mock user state
 
   // Check for user in localStorage on component mount
   useEffect(() => {
