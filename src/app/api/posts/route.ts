@@ -136,8 +136,8 @@ export async function GET(request: NextRequest) {
     const db = getDatabase()
     console.log('Database connection established for GET posts')
     
-    // Build base query
-    let baseQuery = db
+    // Build query with conditional where clauses
+    let queryBuilder = db
       .select({
         id: posts.id,
         title: posts.title,
@@ -161,14 +161,14 @@ export async function GET(request: NextRequest) {
       .from(posts)
       .leftJoin(users, eq(posts.authorId, users.id))
 
-    // Apply filters
+    // Apply filters using conditional logic
     if (filter === 'published') {
-      baseQuery = baseQuery.where(eq(posts.published, true))
+      queryBuilder = queryBuilder.where(eq(posts.published, true)) as any
     } else if (filter === 'draft') {
-      baseQuery = baseQuery.where(eq(posts.published, false))
+      queryBuilder = queryBuilder.where(eq(posts.published, false)) as any
     }
 
-    let query = baseQuery
+    let query = queryBuilder
 
     // Apply sorting
     switch (sortBy) {
