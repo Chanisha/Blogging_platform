@@ -136,8 +136,8 @@ export async function GET(request: NextRequest) {
     const db = getDatabase()
     console.log('Database connection established for GET posts')
     
-    // Build query with joins to get author information
-    let query = db
+    // Build base query
+    let baseQuery = db
       .select({
         id: posts.id,
         title: posts.title,
@@ -163,10 +163,12 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (filter === 'published') {
-      query = query.where(eq(posts.published, true))
+      baseQuery = baseQuery.where(eq(posts.published, true))
     } else if (filter === 'draft') {
-      query = query.where(eq(posts.published, false))
+      baseQuery = baseQuery.where(eq(posts.published, false))
     }
+
+    let query = baseQuery
 
     // Apply sorting
     switch (sortBy) {
