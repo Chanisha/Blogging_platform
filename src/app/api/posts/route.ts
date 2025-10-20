@@ -74,8 +74,17 @@ export async function POST(request: NextRequest) {
       }
     } catch (userError) {
       console.error('Error handling user:', userError)
-      // If user creation fails, we'll skip the authorId for now
-      defaultUser = null
+      return NextResponse.json(
+        { error: 'Failed to create or retrieve user account' },
+        { status: 500 }
+      )
+    }
+
+    if (!defaultUser) {
+      return NextResponse.json(
+        { error: 'No user account available' },
+        { status: 500 }
+      )
     }
 
     // Create the post
@@ -86,7 +95,7 @@ export async function POST(request: NextRequest) {
         content: content.trim(),
         excerpt: excerpt?.trim() || null,
         slug: finalSlug,
-        authorId: defaultUser?.id,
+        authorId: defaultUser.id,
         tags: tags ? (Array.isArray(tags) ? tags.filter(Boolean) : tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)) : [],
         featuredImage: featuredImage?.trim() || null,
         published: Boolean(published),
