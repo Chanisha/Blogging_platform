@@ -168,27 +168,23 @@ export async function GET(request: NextRequest) {
       queryBuilder = queryBuilder.where(eq(posts.published, false)) as any
     }
 
-    let query = queryBuilder
+    // Decide ordering expression once, then call orderBy a single time
+    const orderExpr = (() => {
+      switch (sortBy) {
+        case 'newest':
+          return desc(posts.updatedAt)
+        case 'oldest':
+          return asc(posts.updatedAt)
+        case 'views':
+          return desc(posts.views)
+        case 'title':
+          return asc(posts.title)
+        default:
+          return desc(posts.updatedAt)
+      }
+    })()
 
-    // Apply sorting
-    switch (sortBy) {
-      case 'newest':
-        query = query.orderBy(desc(posts.updatedAt))
-        break
-      case 'oldest':
-        query = query.orderBy(asc(posts.updatedAt))
-        break
-      case 'views':
-        query = query.orderBy(desc(posts.views))
-        break
-      case 'title':
-        query = query.orderBy(asc(posts.title))
-        break
-      default:
-        query = query.orderBy(desc(posts.updatedAt))
-    }
-
-    const allPosts = await query
+    const allPosts = await queryBuilder.orderBy(orderExpr)
 
     // Apply client-side filters (search, category) since they're more complex
     let filteredPosts = allPosts
